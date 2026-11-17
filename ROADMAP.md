@@ -135,6 +135,7 @@ Ranked; estimates in Opus 5.5 agent-hours. Detail and the full beta-gate list in
 
 ## Progress log
 
+- 2026-11-17: Mirai sync: merged upstream d60709a1 (3 commits); fork branding, assistant and themes retained; estimates unchanged.
 - 2026-11-14: Mirai sync: merged upstream f2044337; fork branding, assistant and themes retained; estimates unchanged.
 
 | Date | What landed |
