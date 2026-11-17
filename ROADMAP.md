@@ -1,6 +1,6 @@
 # GridCraft roadmap
 
-> **Last updated:** 2026-11-14 · **Change:** trivial (Mirai sync: merged upstream f2044337; fork branding, assistant and themes retained; estimates unchanged.)
+> **Last updated:** 2026-11-17 · **Change:** trivial (Mirai sync: merged upstream c8e69968; fork branding, assistant, Aura Dark and Windows self-sign retained; version 0.19.2-mirai.1; estimates unchanged.)
 
 **Stage: alpha** · next: beta, ~25 points of "ready for real work" and ~160–240 h away
 
