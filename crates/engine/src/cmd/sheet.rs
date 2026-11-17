@@ -119,6 +119,39 @@ fn shift_anchor(sh: &Sheet, a: Anchor, corner: (u32, u32, f32, f32), axis: Axis,
 }
 
 /// Shifts everything that has a position on the sheet for an insert/delete.
+/// Whether a line insert or delete at `at` for `count` lines falls inside a report (not on its
+/// first line, which moves the whole area). Matches the remap in [`shift_sheet_features`].
+fn line_edit_inside_report(r: RangeRef, axis: Axis, at: u32, count: u32, insert: bool) -> bool {
+    let (lo, hi) = if axis == Axis::Rows { (r.start.row, r.end.row) } else { (r.start.col, r.end.col) };
+    at <= hi && if insert { at > lo } else { at.saturating_add(count) > lo }
+}
+
+/// Builds GETPIVOTDATA indexes for pivots that an in-report line edit will move, when the pivot
+/// still has none (an XLSX load). Must run before the cells shift so the stored report still
+/// matches the sheet; [`shift_sheet_features`] then remaps those cells with the report.
+fn seed_pivot_indexes_before_line_edit(wb: &gridcraft_model::Workbook, sheet: usize, axis: Axis, at: u32, count: u32, insert: bool) {
+    let Some(sh) = wb.sheet(sheet) else { return };
+    let to_seed: Vec<usize> = sh
+        .pivots
+        .iter()
+        .enumerate()
+        .filter_map(|(i, pt)| {
+            let r = pt.last_range?;
+            if pt.data_index.cells().is_some() {
+                return None;
+            }
+            line_edit_inside_report(r, axis, at, count, insert).then_some(i)
+        })
+        .collect();
+    for i in to_seed {
+        let Some(pt) = wb.sheet(sheet).and_then(|s| s.pivots.get(i)) else { continue };
+        if let Ok(cells) = crate::pivot::index_cells(wb, sheet, pt) {
+            // `PivotLookup` is shared (`Arc`); `set_cells` takes `&self`, so this needs no mut.
+            pt.data_index.set_cells(cells);
+        }
+    }
+}
+
 fn shift_sheet_features(sh: &mut Sheet, axis: Axis, at: u32, count: u32, insert: bool) {
     let map_line = |v: u32| -> Option<u32> {
         if insert {
@@ -218,23 +251,21 @@ fn shift_sheet_features(sh: &mut Sheet, axis: Axis, at: u32, count: u32, insert:
         // a new index (the shared one stays with the undo snapshots); a value cell deleted with
         // its line drops out, so it is #REF! rather than read from whatever took its place.
         let index = pt.data_index.clone();
-        if let (Some(o), Some(n), Some(cells)) = (old, pt.last_range, index.cells()) {
-            let (lo, hi) = if axis == Axis::Rows { (o.start.row, o.end.row) } else { (o.start.col, o.end.col) };
-            let inside = at <= hi && if insert { at > lo } else { at.saturating_add(count) > lo };
-            if inside {
-                let moved: Vec<PivotDataCell> = cells
-                    .iter()
-                    .filter_map(|c| {
-                        let to = map_cell(CellRef::new(o.start.row.checked_add(c.row)?, o.start.col.checked_add(c.col)?))?;
-                        Some(PivotDataCell { row: to.row.checked_sub(n.start.row)?, col: to.col.checked_sub(n.start.col)?, ..c.clone() })
-                    })
-                    .collect();
-                let lookup = PivotLookup::default();
-                if !moved.is_empty() {
-                    lookup.set_cells(moved);
-                }
-                pt.data_index = lookup;
+        if let (Some(o), Some(n), Some(cells)) = (old, pt.last_range, index.cells())
+            && line_edit_inside_report(o, axis, at, count, insert)
+        {
+            let moved: Vec<PivotDataCell> = cells
+                .iter()
+                .filter_map(|c| {
+                    let to = map_cell(CellRef::new(o.start.row.checked_add(c.row)?, o.start.col.checked_add(c.col)?))?;
+                    Some(PivotDataCell { row: to.row.checked_sub(n.start.row)?, col: to.col.checked_sub(n.start.col)?, ..c.clone() })
+                })
+                .collect();
+            let lookup = PivotLookup::default();
+            if !moved.is_empty() {
+                lookup.set_cells(moved);
             }
+            pt.data_index = lookup;
         }
     }
 }
@@ -318,6 +349,8 @@ fn insert_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
     let out = edit(s, |cx| {
         let name = cx.wb.sheet(sheet).map(|s| s.name.clone()).unwrap_or_default();
         cx.protection_checked = true;
+        // Seed empty indexes while the stored report still matches the sheet (XLSX loads).
+        seed_pivot_indexes_before_line_edit(&cx.wb, sheet, axis, at, count, true);
         {
             let sh = cx.sheet_mut(sheet)?;
             match axis {
@@ -380,6 +413,7 @@ fn delete_lines(s: &mut Session, p: &Json, axis: Axis) -> Result<Json> {
         cx.protection_checked = true;
         // Last area first, so the earlier ones keep their positions.
         for (at, count) in areas {
+            seed_pivot_indexes_before_line_edit(&cx.wb, sheet, axis, at, count, false);
             {
                 let sh = cx.sheet_mut(sheet)?;
                 let block = match axis {
@@ -440,6 +474,7 @@ fn move_columns(s: &mut Session, p: &Json) -> Result<Json> {
         let name = cx.wb.sheet(sheet).map(|sh| sh.name.clone()).unwrap_or_default();
         cx.protection_checked = true;
 
+        seed_pivot_indexes_before_line_edit(&cx.wb, sheet, Axis::Cols, before, count, true);
         {
             let sh = cx.sheet_mut(sheet)?;
             sh.cells.shift_cols(before, count as i64);
@@ -485,6 +520,7 @@ fn move_columns(s: &mut Session, p: &Json) -> Result<Json> {
         }
         rewrite(cx, &name, &Edit::Move { from: source, to_row: 0, to_col: destination })?;
 
+        seed_pivot_indexes_before_line_edit(&cx.wb, sheet, Axis::Cols, delete_at, count, false);
         {
             let sh = cx.sheet_mut(sheet)?;
             sh.cells.shift_cols(delete_at + count, -(count as i64));

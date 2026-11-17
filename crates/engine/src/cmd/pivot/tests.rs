@@ -914,6 +914,50 @@ fn getpivotdata_follows_rows_and_columns_edited_inside_the_report() {
     }
 }
 
+/// A two-column pivot reopened from XLSX so GETPIVOTDATA has no stored index yet.
+fn xlsx_pivot() -> Session {
+    let mut s = two_column_pivot(["Region", "Sales"], json!([["East", 10], ["North", 30], ["West", 20]]), None);
+    reopen(&mut s);
+    assert!(pt(&s).data_index.cells().is_none(), "XLSX carries no index");
+    s
+}
+
+/// After opening XLSX (no stored GETPIVOTDATA index), inserting or deleting rows or columns
+/// inside the report still keeps GETPIVOTDATA on the moved value cells — not `#REF!` until a
+/// refresh. The index is seeded from the stored report before the cells shift, then remapped.
+#[test]
+fn getpivotdata_follows_in_report_edits_after_xlsx_load() {
+    // Insert a row between the header and the items before any GETPIVOTDATA builds the index.
+    let mut s = xlsx_pivot();
+    s.execute("home.insertRows", json!({"rows": "4:4"})).unwrap();
+    assert!(pt(&s).data_index.cells().is_some(), "row insert seeds and remaps the index");
+    let at = pt(&s).last_range.unwrap().start.a1();
+    s.execute("cell.set", json!({"cell": "K1", "input": format!(r#"=GETPIVOTDATA("Sales",{at},"Region","West")"#)})).unwrap();
+    s.execute("cell.set", json!({"cell": "K2", "input": format!(r#"=GETPIVOTDATA("Sales",{at},"Region","North")"#)})).unwrap();
+    assert_eq!(shown(&s, "West"), Value::Number(20.0));
+    assert_eq!(val(&s, "K1"), shown(&s, "West"));
+    assert_eq!(val(&s, "K2"), shown(&s, "North"));
+
+    // Insert a column between labels and values on a fresh empty-index open.
+    let mut s = xlsx_pivot();
+    s.execute("home.insertColumns", json!({"cols": "B:B"})).unwrap();
+    assert!(pt(&s).data_index.cells().is_some(), "column insert seeds and remaps the index");
+    let at = pt(&s).last_range.unwrap().start.a1();
+    s.execute("cell.set", json!({"cell": "K1", "input": format!(r#"=GETPIVOTDATA("Sales",{at},"Region","West")"#)})).unwrap();
+    assert_eq!(val(&s, "K1"), shown(&s, "West"));
+
+    // Delete North's row on a fresh empty-index open.
+    let mut s = xlsx_pivot();
+    let north = find_row(&s, "North").unwrap() + 1;
+    s.execute("home.deleteRows", json!({"rows": format!("{north}:{north}")})).unwrap();
+    let at = pt(&s).last_range.unwrap().start.a1();
+    s.execute("cell.set", json!({"cell": "K1", "input": format!(r#"=GETPIVOTDATA("Sales",{at},"Region","West")"#)})).unwrap();
+    s.execute("cell.set", json!({"cell": "K2", "input": format!(r#"=GETPIVOTDATA("Sales",{at},"Region","North")"#)})).unwrap();
+    assert_eq!(val(&s, "K1"), Value::Number(20.0));
+    assert_eq!(val(&s, "K1"), shown(&s, "West"));
+    assert_eq!(val(&s, "K2"), Value::Error(CellError::Ref), "a deleted value cell is not read from its old place");
+}
+
 /// Numeric items whose formatted labels collide are told apart by value: an exact numeric item
 /// wins over another item that only displays the same label.
 #[test]
