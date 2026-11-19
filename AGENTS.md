@@ -67,6 +67,7 @@ Read [`ROADMAP.md`](ROADMAP.md) and [`docs/gaps.md`](docs/gaps.md). `plan/` is a
 - Screenshots of Microsoft software are never committed (they live only in `plan/excel/screenshots/`).
 - The app's name in this fork is **Mirai Calc**: `crates/ui-egui/src/brand.rs` holds it and rebrands every translated string (`Lang::tr`). Identifiers keep upstream's GridCraft names (binary, crates, app id, file format, settings folder, installer registry keys and UpgradeCode); when merging upstream, keep the fork's name in titles, About, README and the installer's display names.
 - This Mirai fork has removed the ArtCraft brand files (`docs/brand/`), as upstream asks of forks. Keep them out when merging upstream.
+- The fork's community is the owner's GitHub, `https://github.com/mirasins` (`brand::COMMUNITY`), and its issues live on the fork's tracker (`brand::ISSUES`): when merging upstream, keep the community, issues and source links on the fork, in the app, the Help menu and the packaging metadata. The upstream credit (`brand::UPSTREAM_CREDIT`, `brand::FORK_NOTICE`, `brand::UPSTREAM`, `brand::UPSTREAM_PAGE`, `brand::UPSTREAM_DISCORD`) keeps the original project's names and links, labeled as the original project's — drawn directly, never through the rebrand layer.
 
 ## Never crash
 People trust GridCraft with their numbers; a crash loses their work. **This outranks feature work.**

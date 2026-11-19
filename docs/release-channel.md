@@ -20,6 +20,14 @@ The Mirai fork ships its own releases, separate from upstream `storytold/gridcra
 and the self-update helper both use it, so update checks and downloads only ever look at
 the fork's GitHub releases — never at upstream's.
 
+## Community and credits
+
+Community and support links (`crates/ui-egui/src/brand.rs`) also point at the fork's owner —
+the Mirai community is `github.com/mirasins` and issues go to the fork's tracker — in the About
+dialog, the macOS Help menu, the MSI's Add/Remove-Programs links, AppStream and nfpm, while the
+About dialog and the README credit the original project by name, with its links, each labeled
+as the original project's and kept apart from the fork's own.
+
 ## Cutting a release
 
 Fork releases are built locally; GitHub Actions is not used for them.

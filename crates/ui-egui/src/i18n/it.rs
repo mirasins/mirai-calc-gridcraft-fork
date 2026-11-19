@@ -690,7 +690,7 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Contributors" => "Collaboratori",
         "Models" => "Modelli",
         "Version {version}" => "Versione {version}",
-        "Join the ArtCraft Discord" => "Unisciti al Discord di ArtCraft",
+        "Join the Mirai community" => "Unisciti alla community di Mirai",
         "This workbook has no scripts or macros." => "Questa cartella di lavoro non contiene script o macro.",
         "(unnamed)" => "(senza nome)",
         "— VBA project (preserved, not run)" => "— Progetto VBA (conservato, non eseguito)",

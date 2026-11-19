@@ -63,9 +63,15 @@ fn initialize_and_version_negotiation() {
     let r = &v["result"];
     assert_eq!(r["protocolVersion"], PROTOCOL_VERSION);
     assert_eq!(r["serverInfo"]["name"], "gridcraft");
+    assert_eq!(r["serverInfo"]["title"], "Mirai Calc");
+    assert_eq!(r["serverInfo"]["websiteUrl"], "https://github.com/mirasins/mirai-calc-gridcraft-fork");
     assert!(r["capabilities"]["tools"].is_object());
     assert!(r["capabilities"]["resources"].is_object());
-    assert!(r["instructions"].as_str().unwrap().contains("headless"));
+    let instructions = r["instructions"].as_str().unwrap();
+    assert!(instructions.contains("headless"));
+    assert!(instructions.contains("https://github.com/mirasins"));
+    assert!(instructions.contains("https://github.com/mirasins/mirai-calc-gridcraft-fork/issues"));
+    assert!(instructions.contains("https://github.com/storytold/gridcraft"));
     // Older supported version is echoed back; unknown versions get ours.
     let v = rpc(&mut s, 2, "initialize", json!({"protocolVersion": "2024-11-05"}));
     assert_eq!(v["result"]["protocolVersion"], "2024-11-05");

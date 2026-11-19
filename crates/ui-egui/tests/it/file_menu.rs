@@ -283,6 +283,35 @@ fn file_account_shows_the_version_and_opens_about() {
     assert_eq!(page(&h), Some("account"), "About opens over the File view, like Protect Workbook on Info");
 }
 
+/// The About dialog's links: the fork's community, issues and source all open the owner's GitHub,
+/// and the upstream credit's links open the original project's pages, labeled as such — never as a
+/// Mirai channel. The credit itself is drawn as it stands: `brand::rebrand` renames the fork's own
+/// interface strings and must not rename the original project here.
+#[test]
+fn about_shows_the_fork_community_and_a_labeled_upstream_credit() {
+    use gridcraft_ui_egui::brand;
+    let opened = Arc::new(Mutex::new(Vec::<String>::new()));
+    let sink = opened.clone();
+    let mut h = harness(Services { open_url: Some(Box::new(move |u: &str| sink.lock().unwrap().push(u.to_string()))), ..Default::default() });
+    h.state_mut().open_dialog("about", serde_json::json!({}));
+    h.run_steps(3);
+    // The credit shows as written: the original project's names, never the fork's renaming.
+    h.get_by_label(brand::UPSTREAM_CREDIT);
+    h.get_by_label(brand::FORK_NOTICE);
+    for (label, url) in [
+        ("Join the Mirai community", brand::COMMUNITY),
+        ("Report an issue", brand::ISSUES),
+        ("Source on GitHub", brand::GITHUB),
+        ("GridCraft on GitHub (original project)", brand::UPSTREAM),
+        ("ArtCraft website — original project, not Mirai", brand::UPSTREAM_PAGE),
+        ("ArtCraft Discord (original project)", brand::UPSTREAM_DISCORD),
+    ] {
+        h.get_by_label(label).click();
+        h.run_steps(2);
+        assert_eq!(opened.lock().unwrap().last().map(String::as_str), Some(url), "{label}");
+    }
+}
+
 #[test]
 fn export_as_pdf_is_delivered_as_a_download() {
     let files = Arc::new(Mutex::new(Vec::<(String, Vec<u8>)>::new()));

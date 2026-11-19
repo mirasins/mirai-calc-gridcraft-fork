@@ -706,7 +706,7 @@ pub(super) const DIALOGS: &[(&str, &str)] = &[
     ("Contributors", "貢献者"),
     ("Models", "モデル"),
     ("Version {version}", "バージョン {version}"),
-    ("Join the ArtCraft Discord", "ArtCraft Discord に参加"),
+    ("Join the Mirai community", "Mirai コミュニティに参加"),
     ("This workbook has no scripts or macros.", "このブックにはスクリプトもマクロもありません。"),
     ("(unnamed)", "(名前なし)"),
     ("— VBA project (preserved, not run)", "— VBA プロジェクト (保持されますが、実行されません)"),

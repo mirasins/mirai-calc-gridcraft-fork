@@ -53,7 +53,11 @@ const USAGE: &str = "usage:
   gridcraft-cli send <port> <method> [json]
   gridcraft-cli sandbox-check [--read PATH]... [--exec PATH]... [-- PROGRAM ARGS...]
                      whether this system confines programs (no program: a confined self-test)
-  gridcraft-cli version";
+  gridcraft-cli version
+
+Community: https://github.com/mirasins
+Issues:    https://github.com/mirasins/mirai-calc-gridcraft-fork/issues
+Source:    https://github.com/mirasins/mirai-calc-gridcraft-fork";
 
 /// stdout went away. A reader that stopped early (a closed pipe) ends the program quietly; any
 /// other write error is reported.
