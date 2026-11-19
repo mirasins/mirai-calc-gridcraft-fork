@@ -406,6 +406,50 @@ fn overlaps(a: &RangeRef, b: &RangeRef) -> bool {
     a.intersection(b).is_some()
 }
 
+/// The first pair of overlapping merges in O(n log n), not O(n²): a sweep down the rows with the
+/// column spans of the merges still reaching the current row in a set, and the row each ends in on
+/// a heap. Comparing every pair never returns on a workbook whose whole sheet was merged across
+/// (`edit.selectAll` + `home.mergeAcross`: a merge per row, half a trillion pairs) and the run
+/// spins forever.
+fn overlapping_merges(merges: &[RangeRef]) -> Option<(&RangeRef, &RangeRef)> {
+    use std::cmp::Reverse;
+    use std::collections::BinaryHeap;
+    use std::ops::Bound::{Excluded, Included};
+
+    let mut order: Vec<usize> = (0..merges.len()).collect();
+    order.sort_by_key(|&i| (merges[i].start.row, merges[i].start.col));
+    // The still-open spans are disjoint (an overlap returns), so both their start and end columns
+    // are in order, and meeting the last one at or before a new span's start, or the first one
+    // after it, is all it takes to tell whether any open span meets its columns.
+    let mut open: BTreeSet<(u32, u32, usize)> = BTreeSet::new();
+    let mut ends: BinaryHeap<Reverse<(u32, usize)>> = BinaryHeap::new();
+    for &i in &order {
+        let m = &merges[i];
+        while let Some(&Reverse((row, j))) = ends.peek()
+            && row < m.start.row
+        {
+            let o = &merges[j];
+            open.remove(&(o.start.col, o.end.col, j));
+            ends.pop();
+        }
+        if let Some(&(_, end, j)) = open.range(..=(m.start.col, u32::MAX, usize::MAX)).next_back()
+            && end >= m.start.col
+        {
+            return Some((&merges[j], m));
+        }
+        // The first span starting after this one's start column, if it starts before this one
+        // ends, meets its columns; the one at or before it is covered above.
+        let before = (m.start.col, u32::MAX, usize::MAX);
+        let after = (m.end.col, u32::MAX, usize::MAX);
+        if let Some(&(_, _, j)) = open.range((Excluded(before), Included(after))).next() {
+            return Some((&merges[j], m));
+        }
+        open.insert((m.start.col, m.end.col, i));
+        ends.push(Reverse((m.end.row, i)));
+    }
+    None
+}
+
 fn structure_problem(wb: &Workbook, sel: &gridcraft_engine::Selection) -> Option<String> {
     if wb.sheets.is_empty() {
         return Some("no sheets left".into());
@@ -430,10 +474,8 @@ fn structure_problem(wb: &Workbook, sel: &gridcraft_engine::Selection) -> Option
                 return Some(format!("{}!{c}: array formula covers {a}", sh.name));
             }
         }
-        for (k, m) in sh.merges.iter().enumerate() {
-            if let Some(o) = sh.merges.iter().skip(k + 1).find(|o| overlaps(m, o)) {
-                return Some(format!("{}: merges {m} and {o} overlap", sh.name));
-            }
+        if let Some((m, o)) = overlapping_merges(&sh.merges) {
+            return Some(format!("{}: merges {m} and {o} overlap", sh.name));
         }
         for (k, t) in sh.tables.iter().enumerate() {
             if !tables.insert(t.name.to_ascii_lowercase()) {
@@ -1210,4 +1252,32 @@ fn redo_stops_at_the_oldest_step_its_history_kept() {
     assert!(Arc::ptr_eq(&redo_target(&end, &[entry(&kept)], 2), &kept));
     // Nothing undone, so nothing to redo, whatever an earlier `edit.undo` left there.
     assert!(Arc::ptr_eq(&redo_target(&end, &[entry(&kept)], 0), &end));
+}
+
+/// Seed 1 after the 2026-11 upstream sync picked `edit.selectAll` followed by `home.mergeAcross`
+/// (a new command in the catalog shifted the non-curated picks), and Merge Across on a whole-sheet
+/// selection leaves one merge per row — 1,048,576 of them. The merge-overlap invariant compared
+/// every pair, which is half a trillion intersections on this state: the run never finished.
+/// The sweep checks the same thing in linearithmic time, so this replays the commands and checks
+/// the structure invariants in bounded time. (In the fuzz, one `edit.selectAll` was enough: the
+/// preceding scenario had left exactly the current region selected. Two of them get there from
+/// any state, like pressing Ctrl+A twice.)
+#[test]
+fn merge_across_a_selected_whole_sheet_checks_overlaps_in_bounded_time() {
+    let mut h = Harness::new("sales");
+    if let Err(f) = h.step(0, "edit.selectAll", &json!({})) {
+        panic!("{f:?}");
+    }
+    if let Err(f) = h.step(1, "edit.selectAll", &json!({})) {
+        panic!("{f:?}");
+    }
+    if let Err(f) = h.step(2, "home.mergeAcross", &json!({})) {
+        panic!("{f:?}");
+    }
+    let d = h.s.doc().expect("document");
+    let sh = &d.wb.sheets[d.wb.active_sheet()];
+    assert!(sh.merges.len() >= 1_000_000, "a merge per row of the whole sheet: {}", sh.merges.len());
+    // The one invariant that used to spin on this many merges.
+    assert!(overlapping_merges(&sh.merges).is_none(), "a merge per row overlaps nothing");
+    assert!(structure_problem(&d.wb, &d.selection).is_none());
 }
