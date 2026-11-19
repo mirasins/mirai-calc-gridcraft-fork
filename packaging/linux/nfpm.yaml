@@ -14,13 +14,14 @@ section: misc
 priority: optional
 maintainer: ${GRIDCRAFT_MAINTAINER}
 vendor: Learning Machines LLC
-homepage: https://getartcraft.com/apps/gridcraft
+homepage: https://github.com/mirasins/mirai-calc-gridcraft-fork
 license: MIT OR Apache-2.0
 description: |-
   Open-source, native spreadsheet that works the way Excel users expect.
   Opens and saves .xlsx workbooks and CSV/TSV files; hundreds of worksheet
   functions; formatting, sorting, filtering and charts.
   Includes gridcraft-cli, a headless evaluator, converter and command runner.
+  Mirai Calc is an independent fork of GridCraft by Storytold, part of ArtCraft.
 
 # The binaries link only glibc and libgcc_s directly. Windowing (X11/Wayland, xkbcommon) and the
 # GPU (Vulkan, EGL/GL) are loaded at runtime, so they are dependencies/recommendations here

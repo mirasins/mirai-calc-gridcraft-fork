@@ -687,7 +687,7 @@ pub(super) fn translate(text: &str) -> Option<&'static str> {
         "Contributors" => "Contribuitori",
         "Models" => "Modele",
         "Version {version}" => "Versiunea {version}",
-        "Join the ArtCraft Discord" => "Intrați pe Discord-ul ArtCraft",
+        "Join the Mirai community" => "Alătură-te comunității Mirai",
         "This workbook has no scripts or macros." => "Acest registru nu are scripturi sau macrocomenzi.",
         "(unnamed)" => "(fără nume)",
         "— VBA project (preserved, not run)" => "— proiect VBA (păstrat, nu se rulează)",

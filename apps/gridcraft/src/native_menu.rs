@@ -184,8 +184,10 @@ fn tree() -> Vec<(&'static str, Vec<Entry>)> {
                 ("Check for Updates…", "app.checkForUpdates", None),
                 ("Agent Control (MCP)…", "dialog:agents", None),
                 ("Contributors…", "dialog:about:Contributors", None),
-                ("GridCraft on getartcraft.com", "url:https://getartcraft.com/apps/gridcraft", None),
-                ("Join the ArtCraft Discord…", "url:https://discord.gg/artcraft", None),
+                // The fork's own links: source, issues and community (brand.rs pins the URLs).
+                ("Mirai Calc on GitHub", "url:https://github.com/mirasins/mirai-calc-gridcraft-fork", None),
+                ("Report an Issue…", "url:https://github.com/mirasins/mirai-calc-gridcraft-fork/issues", None),
+                ("Join the Mirai community…", "url:https://github.com/mirasins", None),
             ],
         ),
     ]
@@ -410,6 +412,22 @@ mod tests {
         assert_eq!(item.1, "app.checkForUpdates");
         let mut app = super::SheetApp::new(gridcraft_engine::Session::new(), Default::default());
         assert!(app.run(item.1, serde_json::json!({})).is_ok());
+    }
+
+    #[test]
+    fn help_menu_links_point_at_the_fork() {
+        // The Help menu invites people to the fork's community, issues and source — never to
+        // ArtCraft's pages (brand.rs pins the same URLs for the About dialog).
+        let tree = super::tree();
+        let (_, help) = tree.iter().find(|(title, _)| *title == "Help").expect("Help menu");
+        for (label, url) in [
+            ("Mirai Calc on GitHub", gridcraft_ui_egui::brand::GITHUB),
+            ("Report an Issue…", gridcraft_ui_egui::brand::ISSUES),
+            ("Join the Mirai community…", gridcraft_ui_egui::brand::COMMUNITY),
+        ] {
+            let item = help.iter().find(|e| e.0 == label).unwrap_or_else(|| panic!("{label} in the Help menu"));
+            assert_eq!(item.1, format!("url:{url}"), "{label}");
+        }
     }
 
     #[test]

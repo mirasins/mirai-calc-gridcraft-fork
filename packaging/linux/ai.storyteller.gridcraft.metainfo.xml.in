@@ -20,14 +20,18 @@
       Every action is a command that the included gridcraft-cli tool and AI agents (over MCP)
       can run too, so workbooks can be built and checked without opening a window.
     </p>
+    <p>
+      Mirai Calc is an independent fork of GridCraft by Storytold, part of the ArtCraft
+      project, maintained by mirasins and not affiliated with the ArtCraft team.
+    </p>
   </description>
   <launchable type="desktop-id">ai.storyteller.gridcraft.desktop</launchable>
   <icon type="stock">ai.storyteller.gridcraft</icon>
   <!-- Only url types known to appstream 0.15 (Ubuntu 22.04, where CI validates): no vcs-browser. -->
-  <url type="homepage">https://getartcraft.com/apps/gridcraft</url>
-  <url type="bugtracker">https://github.com/storytold/gridcraft/issues</url>
-  <url type="help">https://github.com/storytold/gridcraft</url>
-  <url type="contact">https://discord.gg/artcraft</url>
+  <url type="homepage">https://github.com/mirasins/mirai-calc-gridcraft-fork</url>
+  <url type="bugtracker">https://github.com/mirasins/mirai-calc-gridcraft-fork/issues</url>
+  <url type="help">https://github.com/mirasins</url>
+  <url type="contact">https://github.com/mirasins</url>
   <categories>
     <category>Office</category>
     <category>Spreadsheet</category>

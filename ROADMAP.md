@@ -1,6 +1,6 @@
 # GridCraft roadmap
 
-> **Last updated:** 2026-11-18 · **Change:** trivial (Mirai sync: merged upstream 00e8f4fa; fork branding, assistant, Aura Dark and Windows self-sign retained; version 0.19.2-mirai.1; estimates unchanged.)
+> **Last updated:** 2026-11-19 · **Change:** trivial (Mirai: community, issues and source links point at the fork owner's GitHub; the upstream credit is labeled as the original project's; estimates unchanged.)
 
 **Stage: alpha** · next: beta, ~25 points of "ready for real work" and ~160–240 h away
 
@@ -135,6 +135,7 @@ Ranked; estimates in Opus 5.5 agent-hours. Detail and the full beta-gate list in
 
 ## Progress log
 
+- 2026-11-19: Mirai: the fork's community and support links point at the owner's GitHub (github.com/mirasins; issues on the fork's tracker): About, the macOS Help menu, the MSI's Add/Remove-Programs links, AppStream, nfpm, the workspace repository metadata and the README follow; About and the README carry a clearly separate upstream credit ("Based on GridCraft by Storytold, part of ArtCraft", links to storytold/gridcraft, getartcraft.com and the ArtCraft Discord, each labeled as the original project's), drawn outside the rebrand layer so the original project keeps its name; estimates unchanged.
 - 2026-11-18: Mirai sync: merged upstream 00e8f4fa (104 commits); fork branding, assistant and themes retained; estimates unchanged.
 - 2026-11-17: Mirai sync: merged upstream d60709a1 (3 commits); fork branding, assistant and themes retained; estimates unchanged.
 - 2026-11-14: Mirai sync: merged upstream f2044337; fork branding, assistant and themes retained; estimates unchanged.
