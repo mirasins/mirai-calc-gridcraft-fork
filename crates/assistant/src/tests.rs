@@ -1,12 +1,13 @@
 use std::ffi::OsString;
+use std::fs;
 use std::io::{self, Read, Write};
 use std::process::Command;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::thread;
 use std::time::{Duration, Instant};
 
-use crate::process::{AUTH_ARGS, GENERATION_ARGS, Limits, credential_override_keys, key_present, run};
+use crate::process::{AUTH_ARGS, GENERATION_ARGS, Limits, ScratchDir, credential_override_keys, key_present, run};
 use crate::protocol::{Source, parse_auth_status, parse_response, prompt_payload, select_auth};
 use crate::{AuthState, Client, Error, MAX_OUTPUT_BYTES, MAX_TARGETS, MAX_TEXT_BYTES, Provider, Request};
 
@@ -608,6 +609,39 @@ fn subprocess_overflow_is_rejected() {
 #[allow(clippy::disallowed_methods)]
 fn test_now() -> Instant {
     Instant::now()
+}
+
+/// The workspace temp directory. `claim` takes the base and the counter as arguments so a test can
+/// force a collision without touching the real temp directory or the process-wide counter.
+fn scratch_base(tag: &str) -> std::path::PathBuf {
+    let base = std::env::temp_dir().join(format!("gridcraft-assistant-{tag}-{}", std::process::id()));
+    let _ = fs::remove_dir_all(&base);
+    base
+}
+
+#[test]
+fn scratch_dir_skips_a_directory_left_by_a_recycled_process_id() {
+    let base = scratch_base("claim");
+    assert!(fs::create_dir(&base).is_ok());
+    let candidate = |count: u64| base.join(format!("gridcraft-assistant-{}-{count}", std::process::id()));
+    // A crashed run left two directories behind and its process id is now ours.
+    assert!(fs::create_dir(candidate(7)).is_ok());
+    assert!(fs::create_dir(candidate(8)).is_ok());
+    let counter = AtomicU64::new(7);
+    let claimed = ScratchDir::claim(&base, &counter).expect("a stale name must not fail the request");
+    assert_eq!(claimed.path(), candidate(9).as_path());
+    assert!(candidate(7).exists() && candidate(8).exists(), "stale directories are left untouched");
+    drop(claimed);
+    assert!(!candidate(9).exists(), "an empty scratch directory is removed on drop");
+    let _ = fs::remove_dir_all(&base);
+}
+
+#[test]
+fn scratch_dir_reports_an_unusable_base_directory() {
+    let base = scratch_base("missing").join("absent");
+    let counter = AtomicU64::new(0);
+    let claimed = ScratchDir::claim(&base, &counter).map(|dir| dir.path().to_path_buf());
+    assert_eq!(claimed, Err(Error::Unavailable));
 }
 
 #[test]
