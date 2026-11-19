@@ -22,8 +22,7 @@
     </p>
     <p>
       Mirai Calc is an independent fork of GridCraft by Storytold, part of the ArtCraft
-      project (upstream: https://github.com/storytold/gridcraft), maintained by mirasins and
-      not affiliated with the ArtCraft team.
+      project, maintained by mirasins and not affiliated with the ArtCraft team.
     </p>
   </description>
   <launchable type="desktop-id">ai.storyteller.gridcraft.desktop</launchable>
